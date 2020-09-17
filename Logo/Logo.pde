@@ -25,7 +25,7 @@ color aluminium = #C6C6C6;
 color silver = #F8F8F8;
 color white = #FFFFFF;
 
-int order = 9;
+int order = 3;
 int N = int(pow(2, order));
 int total = N * N;
 
