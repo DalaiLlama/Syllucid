@@ -25,6 +25,11 @@ color aluminium = #C6C6C6;
 color silver = #F8F8F8;
 color white = #FFFFFF;
 
+int logoWidth = 1024;
+int logoHeight = 1024;
+int lineWidth = 24;
+
+
 int order = 3;
 int N = int(pow(2, order));
 int total = N * N;
@@ -49,13 +54,13 @@ int counter = 0;
 void draw() {
   background(0);
 
-  stroke(255);
-  strokeWeight(1);
+  stroke(greenDark);
+  strokeWeight(lineWidth);
+  strokeCap(PROJECT);
   noFill();
   beginShape();
-  for (int i = 1; i < total; i++) {
-    stroke(aluminium);
-    line(path[i].x, path[i].y, path[i-1].x, path[i-1].y);
+  for (int i = 0; i < total; i++) {
+    vertex(path[i].x, path[i].y);
   }
   endShape();
 }
