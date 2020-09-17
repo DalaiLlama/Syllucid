@@ -33,7 +33,6 @@ PVector[] path = new PVector[total];
 
 void setup() {
   size(1024, 1024);
-  colorMode(HSB, 360, 255, 255);
   background(0);
   float len = width / N;
 
@@ -42,6 +41,8 @@ void setup() {
     path[i].mult(len);
     path[i].add(len/2, len/2);
   }
+
+  noLoop();
 }
 
 int counter = 0;
@@ -51,24 +52,12 @@ void draw() {
   stroke(255);
   strokeWeight(1);
   noFill();
-  //beginShape();
-  for (int i = 1; i < counter; i++) {
-    float h = map(i, 0, path.length, 0, 360);
-    stroke(h, 255, 255);
+  beginShape();
+  for (int i = 1; i < total; i++) {
+    stroke(aluminium);
     line(path[i].x, path[i].y, path[i-1].x, path[i-1].y);
   }
-  //endShape();
-
-  counter+=50;
-  if (counter >= path.length) {
-    counter = 0;
-  }
-
-  //strokeWeight(4);
-  //for (int i = 0; i < path.length; i++) {
-  //  point(path[i].x, path[i].y);
-  //  text(i, path[i].x+5, path[i].y);
-  //}
+  endShape();
 }
 
 
