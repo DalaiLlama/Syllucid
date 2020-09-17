@@ -7,6 +7,24 @@
 // Processing Sketch: https://github.com/CodingTrain/website/tree/master/CodingInTheCabana/Cabana_003_Hilbert_Curve/Processing
 // p5js Sketch: https://editor.p5js.org/codingtrain/sketches/LPf9PLmp
 
+// Greens
+color greenDark = #007C67;
+color greenMid = #3B9F89;
+color greenLight = #78C3AC;
+
+// Yellows
+color yellowDark = #E9B671;
+color yellowMid = #F4CC92;
+color yellowLight = #FFE2B3;
+
+// Greys
+color obsidian = #262626;
+color hematite = #3C3C3C;
+color basalt = #878787;
+color aluminium = #C6C6C6;
+color silver = #F8F8F8;
+color white = #FFFFFF;
+
 int order = 9;
 int N = int(pow(2, order));
 int total = N * N;
@@ -56,9 +74,9 @@ void draw() {
 
 PVector hilbert(int i) {
   PVector[] points = {
-    new PVector(0, 0), 
-    new PVector(0, 1), 
-    new PVector(1, 1), 
+    new PVector(0, 0),
+    new PVector(0, 1),
+    new PVector(1, 1),
     new PVector(1, 0)
   };
 
