@@ -43,12 +43,13 @@ enum Color {
 */
 class Icon {
 
+  private static final float sScale = 5.3; // Number to match line width with width found in branding
+
   HilbertCurve mHilbertCurve;
   boolean mHasBorder;
 
   color mBgColor;
   color mFgColor;
-
 
   Icon(boolean hasBorder, Color bgColor, Color fgColor) {
     mHasBorder = hasBorder;
@@ -62,18 +63,20 @@ class Icon {
 
     int vertexRowCount = mHilbertCurve.getVertexRowCount();
 
-    float scale = 5.3; // Number to match line width with width found in branding
-    int lineWidth = int((width / vertexRowCount) / scale);
+
+    int lineWidth = int((width / vertexRowCount) / sScale);
 
     // Background
     fill(mBgColor);
+
     if (mHasBorder) {
       stroke(mFgColor);
       strokeWeight(lineWidth * 2);
+    } else {
+      noStroke();
     }
-    rect(0, 0, width, height);
 
-    PVector[] path = mHilbertCurve.getPath();
+    rect(0, 0, width, height);
 
     float len = width / (vertexRowCount);
     if (mHasBorder) {
@@ -93,14 +96,35 @@ class Icon {
 
     beginShape();
 
-    for (PVector vector : path) {
-      // Translate path to image space
-      vector.mult(len);
-      vector.add(offset, offset);
-      vertex(vector.x, vector.y);
+    PVector vOut = new PVector();
+
+    // Translate path for image space
+    for (PVector vIn : mHilbertCurve.getPath()) {
+      vOut = vIn.copy();
+      vOut.mult(len);
+      vOut.add(offset, offset);
+      vertex(vOut.x, vOut.y);
     }
 
     endShape();
+  }
+
+  void setBgColor(Color c) {
+    mBgColor = c.getHex();
+  }
+
+  void setFgColor(Color c) {
+    mFgColor = c.getHex();
+  }
+
+  void incrementOrder(){
+    int order = mHilbertCurve.getOrder();
+    mHilbertCurve.setOrder(++order);
+  }
+
+  void decrementOrder() {
+    int order = mHilbertCurve.getOrder();
+    mHilbertCurve.setOrder(--order);
   }
 }
 
@@ -116,7 +140,17 @@ class HilbertCurve {
     setOrder(order);
   }
 
+  int getOrder() {
+    return mOrder;
+  }
+
   void setOrder(int order) {
+
+    // Ignore orders less than two.
+    if (order < 1) {
+      return;
+    }
+
     mOrder = order;
 
     mVertexRowCount = int(pow(2, order));
@@ -190,4 +224,30 @@ void draw() {
   background(0);
 
   icon.draw();
+}
+
+void keyPressed() {
+  if (key == CODED) {
+
+    switch(keyCode) {
+      case UP:
+        icon.incrementOrder();
+        break;
+
+      case DOWN:
+        icon.decrementOrder();
+        break;
+
+      case LEFT:
+        break;
+
+      case RIGHT:
+        break;
+
+      default:
+        break;
+    }
+  }
+
+  redraw();
 }
