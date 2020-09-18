@@ -7,6 +7,7 @@
 // Processing Sketch: https://github.com/CodingTrain/website/tree/master/CodingInTheCabana/Cabana_003_Hilbert_Curve/Processing
 // p5js Sketch: https://editor.p5js.org/codingtrain/sketches/LPf9PLmp
 
+import java.awt.event.KeyEvent;
 
 Icon icon;
 
@@ -15,12 +16,12 @@ Icon icon;
 enum Color {
 
   BLACK(#000000),
-  WHITE(#FFFFFF),
   OBSIDIAN(#262626),
   HEMATITE(#3C3C3C),
   BASALT(#878787),
   ALUMINIMUM(#C6C6C6),
   SILVER(#F8F8F8),
+  WHITE(#FFFFFF),
   GREEN_DARK(#007C67),
   GREEN_MID(#3B9F89),
   GREEN_LIGHT(#78C3AC),
@@ -32,6 +33,71 @@ enum Color {
 
   color getHex() {
     return mHex;
+  }
+
+  Color switchColor(boolean increment) {
+    Color c;
+
+    switch(mHex) {
+
+      case #000000:
+        c = increment ? OBSIDIAN : YELLOW_LIGHT;
+        break;
+
+      case #262626:
+        c = increment ? HEMATITE : BLACK;
+        break;
+
+      case #3C3C3C:
+        c = increment ? BASALT : OBSIDIAN;
+        break;
+
+      case #878787:
+        c = increment ? ALUMINIMUM : HEMATITE;
+        break;
+
+      case #C6C6C6:
+        c = increment ? SILVER : BASALT;
+        break;
+
+      case #F8F8F8:
+        c = increment ? WHITE : ALUMINIMUM;
+        break;
+
+      case #FFFFFF:
+        c = increment ? GREEN_DARK : SILVER;
+        break;
+
+      case #007C67:
+        c = increment ? GREEN_MID : WHITE;
+        break;
+
+      case #3B9F89:
+        c = increment ? GREEN_LIGHT : GREEN_DARK;
+        break;
+
+      case #78C3AC:
+        c = increment ? YELLOW_DARK : GREEN_MID;
+        break;
+
+      case #E9B671:
+        c = increment ? YELLOW_MID : GREEN_LIGHT;
+        break;
+
+      case #F4CC92:
+        c = increment ? YELLOW_LIGHT : YELLOW_DARK;
+        break;
+
+      case #FFE2B3:
+        c = increment ? BLACK : YELLOW_MID;
+        break;
+
+      default:
+        c = BLACK;
+        break;
+    }
+
+    return c;
   }
 
   private Color(color hex) {
@@ -48,13 +114,13 @@ class Icon {
   HilbertCurve mHilbertCurve;
   boolean mHasBorder;
 
-  color mBgColor;
-  color mFgColor;
+  Color mBgColor;
+  Color mFgColor;
 
   Icon(boolean hasBorder, Color bgColor, Color fgColor) {
     mHasBorder = hasBorder;
-    mBgColor = bgColor.getHex();
-    mFgColor = fgColor.getHex();
+    mBgColor = bgColor;
+    mFgColor = fgColor;
 
     mHilbertCurve = new HilbertCurve(3);
   }
@@ -67,10 +133,10 @@ class Icon {
     int lineWidth = int((width / vertexRowCount) / sScale);
 
     // Background
-    fill(mBgColor);
+    fill(mBgColor.getHex());
 
     if (mHasBorder) {
-      stroke(mFgColor);
+      stroke(mFgColor.getHex());
       strokeWeight(lineWidth * 2);
     } else {
       noStroke();
@@ -90,7 +156,7 @@ class Icon {
 
     // Hilbert Curve
     noFill();
-    stroke(mFgColor);
+    stroke(mFgColor.getHex());
     strokeWeight(lineWidth);
     strokeCap(PROJECT);
 
@@ -109,22 +175,20 @@ class Icon {
     endShape();
   }
 
-  void setBgColor(Color c) {
-    mBgColor = c.getHex();
+  void switchBgColor(boolean up) {
+    mBgColor = mBgColor.switchColor(up);
   }
 
-  void setFgColor(Color c) {
-    mFgColor = c.getHex();
+  void switchFgColor(boolean up) {
+    mFgColor = mFgColor.switchColor(up);
   }
 
-  void incrementOrder(){
-    int order = mHilbertCurve.getOrder();
-    mHilbertCurve.setOrder(++order);
+  void setOrder(int order){
+    mHilbertCurve.setOrder(order < 1 ? 1 : order);
   }
 
-  void decrementOrder() {
-    int order = mHilbertCurve.getOrder();
-    mHilbertCurve.setOrder(--order);
+  void toggleBorder() {
+    mHasBorder = !mHasBorder;
   }
 }
 
@@ -146,10 +210,6 @@ class HilbertCurve {
 
   void setOrder(int order) {
 
-    // Ignore orders less than two.
-    if (order < 1) {
-      return;
-    }
 
     mOrder = order;
 
@@ -227,26 +287,34 @@ void draw() {
 }
 
 void keyPressed() {
-  if (key == CODED) {
+  print("Key Pressed: ", keyCode, "\n");
 
+
+  if (key == CODED) {
     switch(keyCode) {
       case UP:
-        icon.incrementOrder();
+        icon.switchBgColor(true);
         break;
 
       case DOWN:
-        icon.decrementOrder();
+        icon.switchBgColor(false);
         break;
 
       case LEFT:
+        icon.switchFgColor(false);
         break;
 
       case RIGHT:
+        icon.switchFgColor(true);
         break;
 
       default:
         break;
     }
+  } else if (keyCode >= KeyEvent.VK_1 && keyCode <= KeyEvent.VK_9) {
+    icon.setOrder(keyCode - 48);
+  } else if (keyCode == KeyEvent.VK_B) {
+    icon.toggleBorder();
   }
 
   redraw();
