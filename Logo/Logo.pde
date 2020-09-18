@@ -45,57 +45,56 @@ enum Color {
   Color switchColor(boolean increment) {
     Color c;
 
-    switch(mHex) {
-
-      case #000000:
+    switch(this) {
+      case BLACK:
         c = increment ? OBSIDIAN : YELLOW_LIGHT;
         break;
 
-      case #262626:
+      case OBSIDIAN:
         c = increment ? HEMATITE : BLACK;
         break;
 
-      case #3C3C3C:
+      case HEMATITE:
         c = increment ? BASALT : OBSIDIAN;
         break;
 
-      case #878787:
+      case BASALT:
         c = increment ? ALUMINIMUM : HEMATITE;
         break;
 
-      case #C6C6C6:
+      case ALUMINIMUM:
         c = increment ? SILVER : BASALT;
         break;
 
-      case #F8F8F8:
+      case SILVER:
         c = increment ? WHITE : ALUMINIMUM;
         break;
 
-      case #FFFFFF:
+      case WHITE:
         c = increment ? GREEN_DARK : SILVER;
         break;
 
-      case #007C67:
+      case GREEN_DARK:
         c = increment ? GREEN_MID : WHITE;
         break;
 
-      case #3B9F89:
+      case GREEN_MID:
         c = increment ? GREEN_LIGHT : GREEN_DARK;
         break;
 
-      case #78C3AC:
+      case GREEN_LIGHT:
         c = increment ? YELLOW_DARK : GREEN_MID;
         break;
 
-      case #E9B671:
+      case YELLOW_DARK:
         c = increment ? YELLOW_MID : GREEN_LIGHT;
         break;
 
-      case #F4CC92:
+      case YELLOW_MID:
         c = increment ? YELLOW_LIGHT : YELLOW_DARK;
         break;
 
-      case #FFE2B3:
+      case YELLOW_LIGHT:
         c = increment ? BLACK : YELLOW_MID;
         break;
 
