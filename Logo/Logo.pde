@@ -7,94 +7,136 @@
 // Processing Sketch: https://github.com/CodingTrain/website/tree/master/CodingInTheCabana/Cabana_003_Hilbert_Curve/Processing
 // p5js Sketch: https://editor.p5js.org/codingtrain/sketches/LPf9PLmp
 
-// Greens
-final color GREEN_DARK = #007C67;
-final color GREEN_MID = #3B9F89;
-final color GREEN_LIGHT = #78C3AC;
 
-// Yellows
-final color YELLOW_DARK = #E9B671;
-final color YELLOW_MID = #F4CC92;
-final color YELLOW_LIGHT = #FFE2B3;
+Icon icon;
 
-// Greys
-final color OBSIDIAN = #262626;
-final color HEMATITE = #3C3C3C;
-final color BASALT = #878787;
-final color ALUMINIMUM = #C6C6C6;
-final color SILVER = #F8F8F8;
-final color WHITE = #FFFFFF;
+/**
+*/
+enum Color {
 
-// Dimentions
-final int logoWidth = 1024;
-final int logoHeight = 1024;
+  BLACK(#000000),
+  WHITE(#FFFFFF),
+  OBSIDIAN(#262626),
+  HEMATITE(#3C3C3C),
+  BASALT(#878787),
+  ALUMINIMUM(#C6C6C6),
+  SILVER(#F8F8F8),
+  GREEN_DARK(#007C67),
+  GREEN_MID(#3B9F89),
+  GREEN_LIGHT(#78C3AC),
+  YELLOW_DARK(#E9B671),
+  YELLOW_MID(#F4CC92),
+  YELLOW_LIGHT(#FFE2B3);
 
-final int HILBERT_ORDER = 3;
+  private color mHex;
 
-HilbertCurve curve;
+  color getHex() {
+    return mHex;
+  }
 
-void setup() {
-  size(1024, 1024);
-
-  background(0);
-
-  noLoop();
-
-  curve = new HilbertCurve(HILBERT_ORDER, GREEN_DARK);
+  private Color(color hex) {
+    mHex = hex;
+  }
 }
 
-void draw() {
-  background(0);
+/**
+*/
+class Icon {
 
-  noFill();
+  HilbertCurve mHilbertCurve;
+  boolean mHasBorder;
 
-  curve.draw();
+  color mBgColor;
+  color mFgColor;
+
+
+  Icon(boolean hasBorder, Color bgColor, Color fgColor) {
+    mHasBorder = hasBorder;
+    mBgColor = bgColor.getHex();
+    mFgColor = fgColor.getHex();
+
+    mHilbertCurve = new HilbertCurve(3);
+  }
+
+  void draw() {
+
+    int vertexRowCount = mHilbertCurve.getVertexRowCount();
+
+    float scale = 5.3; // Number to match line width with width found in branding
+    int lineWidth = int((width / vertexRowCount) / scale);
+
+    // Background
+    fill(mBgColor);
+    if (mHasBorder) {
+      stroke(mFgColor);
+      strokeWeight(lineWidth * 2);
+    }
+    rect(0, 0, width, height);
+
+    PVector[] path = mHilbertCurve.getPath();
+
+    float len = width / (vertexRowCount);
+    if (mHasBorder) {
+      len = width / (vertexRowCount + 1);
+    }
+
+    float offset = len/2;
+    if (mHasBorder) {
+      offset = len;
+    }
+
+    // Hilbert Curve
+    noFill();
+    stroke(mFgColor);
+    strokeWeight(lineWidth);
+    strokeCap(PROJECT);
+
+    beginShape();
+
+    for (PVector vector : path) {
+      // Translate path to image space
+      vector.mult(len);
+      vector.add(offset, offset);
+      vertex(vector.x, vector.y);
+    }
+
+    endShape();
+  }
 }
 
 /**
 */
 class HilbertCurve {
 
-  final int mOrder;
-  final color mColor;
-  final int mLineWidth;
+  int mOrder;
+  int mVertexRowCount;
+  PVector[] mPath;
 
-  final int mVertexTotal;
-  final PVector[] mPath;
+  HilbertCurve(final int order) {
+    setOrder(order);
+  }
 
-  HilbertCurve(final int order, final color lineColor) {
+  void setOrder(int order) {
     mOrder = order;
-    mColor = lineColor;
-    mLineWidth = 24;
 
-    int vertexRowCount = int(pow(2, order));
-    int vertexColumnCount = vertexRowCount;
-    float len = width / vertexRowCount;
+    mVertexRowCount = int(pow(2, order));
 
-    mVertexTotal = vertexRowCount * vertexColumnCount;
+    int vertexCount = int(pow(mVertexRowCount, 2));
 
-    mPath = new PVector[mVertexTotal];
+    mPath = new PVector[vertexCount];
 
     // Calculate position of each vertex
-    for (int i = 0; i < mVertexTotal; i++) {
+    for (int i = 0; i < vertexCount; i++) {
       mPath[i] = calculateVector(i);
-      mPath[i].mult(len);
-      mPath[i].add(len/2, len/2);
     }
   }
 
-  void draw() {
-    stroke(mColor);
-    strokeWeight(mLineWidth);
-    strokeCap(PROJECT);
+  PVector[] getPath() {
+    return mPath;
+  }
 
-    beginShape();
-
-    for (int i = 0; i < mVertexTotal; i++) {
-      vertex(mPath[i].x, mPath[i].y);
-    }
-
-    endShape();
+  int getVertexRowCount() {
+    return mVertexRowCount;
   }
 
   private PVector calculateVector(int i) {
@@ -132,4 +174,20 @@ class HilbertCurve {
 
     return v;
   }
+}
+
+void setup() {
+  size(1024, 1024);
+
+  background(0);
+
+  noLoop();
+
+  icon = new Icon(false, Color.OBSIDIAN, Color.GREEN_DARK);
+}
+
+void draw() {
+  background(0);
+
+  icon.draw();
 }
