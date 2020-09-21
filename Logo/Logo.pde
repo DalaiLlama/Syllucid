@@ -106,6 +106,41 @@ enum Color {
     return c;
   }
 
+  color getGradientColor(boolean startColor) {
+    Color c;
+
+    switch(this) {
+      case BLACK:
+      case OBSIDIAN:
+      case HEMATITE:
+      case BASALT:
+      case ALUMINIMUM:
+      case SILVER:
+      case WHITE:
+        c = startColor ? ALUMINIMUM : OBSIDIAN;
+        break;
+
+      case GREEN_DARK:
+      case GREEN_MID:
+      case GREEN_LIGHT:
+        c = startColor ? GREEN_LIGHT : GREEN_DARK;
+        break;
+
+      case YELLOW_DARK:
+      case YELLOW_MID:
+      case YELLOW_LIGHT:
+        c = startColor ? YELLOW_LIGHT : YELLOW_DARK;
+        break;
+
+      default:
+        c = startColor ? ALUMINIMUM : OBSIDIAN;
+        break;
+    }
+
+    return c.getHex();
+  }
+
+
   private Color(color hex) {
     mHex = hex;
   }
@@ -124,7 +159,10 @@ class Icon {
   boolean mHasBorder;
   boolean mIsTransparent;
   boolean mSave;
+
   Color mBgColor;
+  boolean mHasBgGradient;
+
   Color mFgColor;
 
   Icon(boolean hasBorder, Color bgColor, Color fgColor) {
@@ -136,6 +174,8 @@ class Icon {
     mIsTransparent = false;
     mSave = false;
     mBgColor = bgColor;
+    mHasBgGradient = false;
+
     mFgColor = fgColor;
   }
 
@@ -162,7 +202,21 @@ class Icon {
 
 
     // Background and border
-    mBuffer.fill(mBgColor.getHex(), mIsTransparent ? 0 : 255);
+    if(mHasBgGradient) {
+      mBuffer.noFill();
+
+      for (int i = 0; i < width; i++) {
+
+        float inter = map(i, 0, width, 0, 1);
+
+        color c = lerpColor(mBgColor.getGradientColor(true), mBgColor.getGradientColor(false), inter);
+
+        mBuffer.stroke(c);
+        mBuffer.line(i, 0, i, 0+height);
+      }
+    } else {
+      mBuffer.fill(mBgColor.getHex(), mIsTransparent ? 0 : 255);
+    }
 
     if (mHasBorder) {
       mBuffer.stroke(mFgColor.getHex());
@@ -176,6 +230,8 @@ class Icon {
 
     // Hilbert Curve
     mBuffer.noFill();
+
+
     mBuffer.stroke(mFgColor.getHex());
     mBuffer.strokeWeight(lineWidth);
     mBuffer.strokeCap(PROJECT);
@@ -227,6 +283,11 @@ class Icon {
   void toggleTransparency() {
     mIsTransparent = !mIsTransparent;
     print("Transparent: ", mIsTransparent, "\n");
+  }
+
+  void toggleBgGradient() {
+    mHasBgGradient = !mHasBgGradient;
+    print("Background gradient: ", mHasBgGradient, "\n");
   }
 
   String getFileName() {
@@ -373,6 +434,8 @@ void keyPressed() {
     icon.setOrder(keyCode - 48);
   } else if (keyCode == KeyEvent.VK_B) {
     icon.toggleBorder();
+  } else if (keyCode == KeyEvent.VK_G) {
+    icon.toggleBgGradient();
   } else if (keyCode == KeyEvent.VK_S) {
     icon.toggleSave();
   } else if (keyCode == KeyEvent.VK_T) {
