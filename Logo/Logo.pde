@@ -117,68 +117,90 @@ class Icon {
 
   private static final float sScale = 5.3; // Number to match line width with width found in branding
 
-  HilbertCurve mHilbertCurve;
-  boolean mHasBorder;
+  PGraphics mBuffer;
 
+  HilbertCurve mHilbertCurve;
+
+  boolean mHasBorder;
+  boolean mIsTransparent;
+  boolean mSave;
   Color mBgColor;
   Color mFgColor;
 
   Icon(boolean hasBorder, Color bgColor, Color fgColor) {
-    mHasBorder = hasBorder;
-    mBgColor = bgColor;
-    mFgColor = fgColor;
+    mBuffer = createGraphics(width, height);
 
     mHilbertCurve = new HilbertCurve(3);
+
+    mHasBorder = hasBorder;
+    mIsTransparent = false;
+    mSave = false;
+    mBgColor = bgColor;
+    mFgColor = fgColor;
   }
 
   void draw() {
 
+    //Calcualte parameters
     int vertexRowCount = mHilbertCurve.getVertexRowCount();
-
 
     int lineWidth = int((width / vertexRowCount) / sScale);
 
-    // Background
-    fill(mBgColor.getHex());
+    float lineLenght = width / (vertexRowCount);
+    if (mHasBorder) {
+      lineLenght = width / (vertexRowCount + 1);
+    }
+
+    float offset = lineLenght/2;
+    if (mHasBorder) {
+      offset = lineLenght;
+    }
+
+    // Initilise buffer
+    mBuffer.beginDraw();
+    mBuffer.clear();
+
+
+    // Background and border
+    mBuffer.fill(mBgColor.getHex(), mIsTransparent ? 0 : 255);
 
     if (mHasBorder) {
-      stroke(mFgColor.getHex());
-      strokeWeight(lineWidth * 2);
+      mBuffer.stroke(mFgColor.getHex());
+      mBuffer.strokeWeight(lineWidth * 2);
     } else {
-      noStroke();
+      mBuffer.noStroke();
     }
 
-    rect(0, 0, width, height);
+    mBuffer.rect(0, 0, width, height);
 
-    float len = width / (vertexRowCount);
-    if (mHasBorder) {
-      len = width / (vertexRowCount + 1);
-    }
-
-    float offset = len/2;
-    if (mHasBorder) {
-      offset = len;
-    }
 
     // Hilbert Curve
-    noFill();
-    stroke(mFgColor.getHex());
-    strokeWeight(lineWidth);
-    strokeCap(PROJECT);
+    mBuffer.noFill();
+    mBuffer.stroke(mFgColor.getHex());
+    mBuffer.strokeWeight(lineWidth);
+    mBuffer.strokeCap(PROJECT);
 
-    beginShape();
+    mBuffer.beginShape();
 
     PVector vOut = new PVector();
 
     // Translate path for image space
     for (PVector vIn : mHilbertCurve.getPath()) {
       vOut = vIn.copy();
-      vOut.mult(len);
+      vOut.mult(lineLenght);
       vOut.add(offset, offset);
-      vertex(vOut.x, vOut.y);
+      mBuffer.vertex(vOut.x, vOut.y);
     }
 
-    endShape();
+    mBuffer.endShape();
+    mBuffer.endDraw();
+
+    // Render to screen buffer
+    image(mBuffer, 0, 0);
+
+    if (mSave) {
+      mBuffer.save(icon.getFileName());
+    }
   }
 
   void switchBgColor(boolean up) {
@@ -195,6 +217,38 @@ class Icon {
 
   void toggleBorder() {
     mHasBorder = !mHasBorder;
+  }
+
+  void toggleSave() {
+    mSave = !mSave;
+    print("Save: ", mSave, "\n");
+  }
+
+  void toggleTransparency() {
+    mIsTransparent = !mIsTransparent;
+    print("Transparent: ", mIsTransparent, "\n");
+  }
+
+  String getFileName() {
+    StringBuilder fileName = new StringBuilder();
+
+    //Order
+    fileName.append("Order" + String.valueOf(mHilbertCurve.getOrder()));
+
+    fileName.append("_");
+
+    //Colours
+    fileName.append((mIsTransparent ? "TRANSPARENT" : String.valueOf(mBgColor)) + "&" + String.valueOf(mFgColor));
+
+    fileName.append("_");
+
+    //Size
+    fileName.append(String.valueOf(width) + "x" + String.valueOf(height));
+
+    //File type
+    fileName.append(".png");
+
+    return fileName.toString();
   }
 }
 
@@ -215,8 +269,6 @@ class HilbertCurve {
   }
 
   void setOrder(int order) {
-
-
     mOrder = order;
 
     mVertexRowCount = int(pow(2, order));
@@ -281,16 +333,16 @@ Icon icon;
 void setup() {
   size(1024, 1024);
 
-  background(0);
+  noFill();
 
   noLoop();
 
   icon = new Icon(false, Color.OBSIDIAN, Color.GREEN_DARK);
 }
 
-void draw() {
-  background(0);
 
+void draw() {
+  clear();
   icon.draw();
 }
 
@@ -317,9 +369,14 @@ void keyPressed() {
         break;
     }
   } else if (keyCode >= KeyEvent.VK_1 && keyCode <= KeyEvent.VK_9) {
+    // Hilbert Order 1 to 9
     icon.setOrder(keyCode - 48);
   } else if (keyCode == KeyEvent.VK_B) {
     icon.toggleBorder();
+  } else if (keyCode == KeyEvent.VK_S) {
+    icon.toggleSave();
+  } else if (keyCode == KeyEvent.VK_T) {
+    icon.toggleTransparency();
   }
 
   redraw();
