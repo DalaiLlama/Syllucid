@@ -106,7 +106,7 @@ enum Color {
     return c;
   }
 
-  color getGradientColor(boolean startColor) {
+  Color getGradientColor(boolean startColor) {
     Color c;
 
     switch(this) {
@@ -137,7 +137,7 @@ enum Color {
         break;
     }
 
-    return c.getHex();
+    return c;
   }
 
 
@@ -206,12 +206,10 @@ class Icon {
       mBuffer.noFill();
 
       for (int i = 0; i < width; i++) {
+        color colorStart = mBgColor.getGradientColor(true).getHex();
+        color colorEnd = mBgColor.getGradientColor(false).getHex();
 
-        float inter = map(i, 0, width, 0, 1);
-
-        color c = lerpColor(mBgColor.getGradientColor(true), mBgColor.getGradientColor(false), inter);
-
-        mBuffer.stroke(c);
+        mBuffer.stroke(lerpColor(colorStart, colorEnd, map(i, 0, width, 0, 1)));
         mBuffer.line(i, 0, i, 0+height);
       }
     } else {
@@ -299,7 +297,16 @@ class Icon {
     fileName.append("_");
 
     //Colours
-    fileName.append((mIsTransparent ? "TRANSPARENT" : String.valueOf(mBgColor)) + "&" + String.valueOf(mFgColor));
+    //Background Colour
+    if (mHasBgGradient) {
+        fileName.append("BgGradient-" + mBgColor.getGradientColor(true) + "-" + mBgColor.getGradientColor(false));
+    } else {
+      fileName.append("Bg-" + (mIsTransparent ? "TRANSPARENT" : String.valueOf(mBgColor)));
+    }
+
+    //Foreground colour
+    fileName.append(("&" + String.valueOf(mFgColor)));
+
 
     fileName.append("_");
 
