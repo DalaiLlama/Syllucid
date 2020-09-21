@@ -187,27 +187,28 @@ class Icon {
   }
 
   void draw() {
-    renderBackground();
+    bgBuffer();
 
-    renderForeground();
+    fgBuffer();
+
+    mBuffer.image(mFgBuffer, 0, 0);
+    mBuffer.endDraw();
+
+    image(mBuffer, 0, 0);
 
     if (mSave) {
       mBuffer.save(icon.getFileName());
     }
   }
 
-  void renderBackground() {
+  void bgBuffer() {
     mBuffer.beginDraw();
     mBuffer.clear();
 
     fillBuffer(mBuffer, mBgColor, mBgGradient);
-
-    mBuffer.endDraw();
-
-    image(mBuffer, 0, 0, width, height);
   }
 
-  void renderForeground() {
+  void fgBuffer() {
     mFgBuffer.beginDraw();
     mFgBuffer.clear();
     fillBuffer(mFgBuffer, mFgColor, mFgGradient);
@@ -221,8 +222,6 @@ class Icon {
     mFgBuffer.mask(mMask);
 
     mFgBuffer.endDraw();
-
-    image(mFgBuffer, 0, 0);
   }
 
   void fillBuffer(PGraphics buffer, Color c, boolean hasGradient) {
