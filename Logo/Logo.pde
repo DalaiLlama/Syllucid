@@ -34,7 +34,8 @@ enum Color {
   GREEN_LIGHT(#78C3AC),
   YELLOW_DARK(#E9B671),
   YELLOW_MID(#F4CC92),
-  YELLOW_LIGHT(#FFE2B3);
+  YELLOW_LIGHT(#FFE2B3),
+  TRANSPARENT(#FFFFFF);
 
   private color mHex;
 
@@ -98,8 +99,9 @@ enum Color {
         c = increment ? BLACK : YELLOW_MID;
         break;
 
+      case TRANSPARENT:
       default:
-        c = BLACK;
+        c = TRANSPARENT;
         break;
     }
 
@@ -153,34 +155,102 @@ class Icon {
   private static final float sScale = 5.3; // Number to match line width with width found in branding
 
   PGraphics mBuffer;
+  PGraphics mFgBuffer;
+  PGraphics mMask;
 
   HilbertCurve mHilbertCurve;
 
   boolean mHasBorder;
-  boolean mIsTransparent;
   boolean mSave;
 
   Color mBgColor;
-  boolean mHasBgGradient;
+  boolean mBgGradient;
 
   Color mFgColor;
+  boolean mFgGradient;
 
   Icon(boolean hasBorder, Color bgColor, Color fgColor) {
     mBuffer = createGraphics(width, height);
+    mFgBuffer = createGraphics(width, height);
+    mMask = createGraphics(width, height);
 
     mHilbertCurve = new HilbertCurve(3);
 
     mHasBorder = hasBorder;
-    mIsTransparent = false;
     mSave = false;
+
     mBgColor = bgColor;
-    mHasBgGradient = false;
+    mBgGradient = false;
 
     mFgColor = fgColor;
+    mFgGradient = false;
   }
 
   void draw() {
+    renderBackground();
 
+    renderForeground();
+
+    if (mSave) {
+      mBuffer.save(icon.getFileName());
+    }
+  }
+
+  void renderBackground() {
+    mBuffer.beginDraw();
+    mBuffer.clear();
+
+    fillBuffer(mBuffer, mBgColor, mBgGradient);
+
+    mBuffer.endDraw();
+
+    image(mBuffer, 0, 0, width, height);
+  }
+
+  void renderForeground() {
+    mFgBuffer.beginDraw();
+    mFgBuffer.clear();
+    fillBuffer(mFgBuffer, mFgColor, mFgGradient);
+
+    mMask.beginDraw();
+    mMask.clear();
+    createMask();
+
+    mMask.endDraw();
+
+    mFgBuffer.mask(mMask);
+
+    mFgBuffer.endDraw();
+
+    image(mFgBuffer, 0, 0);
+  }
+
+  void fillBuffer(PGraphics buffer, Color c, boolean hasGradient) {
+
+    if (c == Color.TRANSPARENT) {
+      buffer.noStroke();
+      buffer.fill(0, 0);
+    } else {
+      if(hasGradient) {
+        // Stroke
+        for (int i = 0; i < width; i++) {
+          color colorStart = c.getGradientColor(true).getHex();
+          color colorEnd = c.getGradientColor(false).getHex();
+
+          buffer.stroke(lerpColor(colorStart, colorEnd, map(i, 0, width, 0, 1)));
+          buffer.line(i, 0, i, height);
+        }
+        buffer.noFill();
+      } else {
+        buffer.noStroke();
+        buffer.fill(c.getHex());
+      }
+    }
+
+    buffer.rect(0, 0, width, height);
+  }
+
+  void createMask() {
     //Calcualte parameters
     int vertexRowCount = mHilbertCurve.getVertexRowCount();
 
@@ -196,45 +266,24 @@ class Icon {
       offset = lineLenght;
     }
 
-    // Initilise buffer
-    mBuffer.beginDraw();
-    mBuffer.clear();
-
-
-    // Background and border
-    if(mHasBgGradient) {
-      mBuffer.noFill();
-
-      for (int i = 0; i < width; i++) {
-        color colorStart = mBgColor.getGradientColor(true).getHex();
-        color colorEnd = mBgColor.getGradientColor(false).getHex();
-
-        mBuffer.stroke(lerpColor(colorStart, colorEnd, map(i, 0, width, 0, 1)));
-        mBuffer.line(i, 0, i, 0+height);
-      }
-    } else {
-      mBuffer.fill(mBgColor.getHex(), mIsTransparent ? 0 : 255);
-    }
-
+    //Border
+    mMask.fill(0, 0);
     if (mHasBorder) {
-      mBuffer.stroke(mFgColor.getHex());
-      mBuffer.strokeWeight(lineWidth * 2);
+      mMask.stroke(255);
+      mMask.strokeWeight(lineWidth * 2);
     } else {
-      mBuffer.noStroke();
+      mMask.noStroke();
     }
-
-    mBuffer.rect(0, 0, width, height);
-
+    mMask.rect(0, 0, width, height);
 
     // Hilbert Curve
-    mBuffer.noFill();
+    mMask.noFill();
 
+    mMask.stroke(255);
+    mMask.strokeWeight(lineWidth);
+    mMask.strokeCap(PROJECT);
 
-    mBuffer.stroke(mFgColor.getHex());
-    mBuffer.strokeWeight(lineWidth);
-    mBuffer.strokeCap(PROJECT);
-
-    mBuffer.beginShape();
+    mMask.beginShape();
 
     PVector vOut = new PVector();
 
@@ -243,18 +292,10 @@ class Icon {
       vOut = vIn.copy();
       vOut.mult(lineLenght);
       vOut.add(offset, offset);
-      mBuffer.vertex(vOut.x, vOut.y);
+      mMask.vertex(vOut.x, vOut.y);
     }
 
-    mBuffer.endShape();
-    mBuffer.endDraw();
-
-    // Render to screen buffer
-    image(mBuffer, 0, 0);
-
-    if (mSave) {
-      mBuffer.save(icon.getFileName());
-    }
+    mMask.endShape();
   }
 
   void switchBgColor(boolean up) {
@@ -279,13 +320,22 @@ class Icon {
   }
 
   void toggleTransparency() {
-    mIsTransparent = !mIsTransparent;
-    print("Transparent: ", mIsTransparent, "\n");
+    if (Color.TRANSPARENT.equals(mBgColor)) {
+      mBgColor = Color.OBSIDIAN;
+    } else {
+      mBgColor = Color.TRANSPARENT;
+    }
+    print("Background: " + mBgColor + "\n");
   }
 
   void toggleBgGradient() {
-    mHasBgGradient = !mHasBgGradient;
-    print("Background gradient: ", mHasBgGradient, "\n");
+    mBgGradient = !mBgGradient;
+    print("BgGradient: " + mBgGradient, "\n");
+  }
+
+  void toggleFgGradient() {
+    mFgGradient = !mFgGradient;
+    print("BgGradient: " + mBgGradient, "\n");
   }
 
   String getFileName() {
@@ -298,15 +348,18 @@ class Icon {
 
     //Colours
     //Background Colour
-    if (mHasBgGradient) {
-        fileName.append("BgGradient-" + mBgColor.getGradientColor(true) + "-" + mBgColor.getGradientColor(false));
+    if (mBgGradient) {
+      fileName.append("BgGradient-" + mBgColor.getGradientColor(true) + "-" + mBgColor.getGradientColor(false));
     } else {
-      fileName.append("Bg-" + (mIsTransparent ? "TRANSPARENT" : String.valueOf(mBgColor)));
+      fileName.append("Bg-" + String.valueOf(mBgColor));
     }
 
     //Foreground colour
-    fileName.append(("&" + String.valueOf(mFgColor)));
-
+    if (mFgGradient) {
+      fileName.append("FgGradient-" + mFgColor.getGradientColor(true) + "-" + mFgColor.getGradientColor(false));
+    } else {
+      fileName.append("Fg-" + String.valueOf(mFgColor));
+    }
 
     fileName.append("_");
 
@@ -411,6 +464,7 @@ void setup() {
 
 void draw() {
   clear();
+
   icon.draw();
 }
 
@@ -443,6 +497,8 @@ void keyPressed() {
     icon.toggleBorder();
   } else if (keyCode == KeyEvent.VK_G) {
     icon.toggleBgGradient();
+  } else if (keyCode == KeyEvent.VK_H) {
+    icon.toggleFgGradient();
   } else if (keyCode == KeyEvent.VK_S) {
     icon.toggleSave();
   } else if (keyCode == KeyEvent.VK_T) {
