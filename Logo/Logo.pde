@@ -153,6 +153,7 @@ enum Color {
 class Icon {
 
   private static final float sScale = 5.3; // Number to match line width with width found in branding
+  private static final float sSocialMediaScale = 0.85; // Number to match icon size found in branding
 
   PGraphics mBuffer;
   PGraphics mFgBuffer;
@@ -162,6 +163,7 @@ class Icon {
 
   boolean mHasBorder;
   boolean mSave;
+  boolean mForSocialMedia;
 
   Color mBgColor;
   boolean mBgGradient;
@@ -178,6 +180,7 @@ class Icon {
 
     mHasBorder = hasBorder;
     mSave = false;
+    mForSocialMedia = false;
 
     mBgColor = bgColor;
     mBgGradient = false;
@@ -191,7 +194,14 @@ class Icon {
 
     fgBuffer();
 
-    mBuffer.image(mFgBuffer, 0, 0);
+    if (mForSocialMedia) {
+      float dim = (pow(2 * pow(width, 2), 0.5)/2) * sSocialMediaScale;
+      float pos = (width/2)-dim/2;
+      mBuffer.image(mFgBuffer, pos, pos, dim, dim);
+    } else {
+      mBuffer.image(mFgBuffer, 0, 0);
+    }
+
     mBuffer.endDraw();
 
     image(mBuffer, 0, 0);
@@ -246,6 +256,7 @@ class Icon {
       }
     }
 
+    buffer.noStroke();
     buffer.rect(0, 0, width, height);
   }
 
@@ -335,6 +346,11 @@ class Icon {
   void toggleFgGradient() {
     mFgGradient = !mFgGradient;
     print("BgGradient: " + mBgGradient, "\n");
+  }
+
+  void toggleSocialMedia() {
+    mForSocialMedia = !mForSocialMedia;
+    print("Social Media: " + mForSocialMedia, "\n");
   }
 
   String getFileName() {
@@ -498,6 +514,8 @@ void keyPressed() {
     icon.toggleBgGradient();
   } else if (keyCode == KeyEvent.VK_H) {
     icon.toggleFgGradient();
+  } else if (keyCode == KeyEvent.VK_M) {
+    icon.toggleSocialMedia();
   } else if (keyCode == KeyEvent.VK_S) {
     icon.toggleSave();
   } else if (keyCode == KeyEvent.VK_T) {
