@@ -142,6 +142,10 @@ enum Color {
     return c;
   }
 
+  @Override
+  public String toString(){
+    return this.name().substring(0, 1).toUpperCase() + this.name().substring(1).toLowerCase();
+  }
 
   private Color(color hex) {
     mHex = hex;
@@ -207,7 +211,9 @@ class Icon {
     image(mBuffer, 0, 0);
 
     if (mSave) {
-      mBuffer.save(icon.getFileName());
+      String fileName = icon.getFileName();
+      print("Saving: " + fileName + "\n");
+      mBuffer.save(fileName);
     }
   }
 
@@ -345,7 +351,7 @@ class Icon {
 
   void toggleFgGradient() {
     mFgGradient = !mFgGradient;
-    print("BgGradient: " + mBgGradient, "\n");
+    print("FgGradient: " + mFgGradient, "\n");
   }
 
   void toggleSocialMedia() {
@@ -359,24 +365,32 @@ class Icon {
     //Order
     fileName.append("Order" + String.valueOf(mHilbertCurve.getOrder()));
 
-    fileName.append("_");
+    fileName.append("-");
+
+    if (mForSocialMedia) {
+      fileName.append("SocialMedia-");
+    }
 
     //Colours
     //Background Colour
+    fileName.append("Bg_");
     if (mBgGradient) {
-      fileName.append("BgGradient-" + mBgColor.getGradientColor(true) + "-" + mBgColor.getGradientColor(false));
+      fileName.append(mBgColor.getGradientColor(true) + "_to_" + mBgColor.getGradientColor(false));
     } else {
-      fileName.append("Bg-" + String.valueOf(mBgColor));
+      fileName.append(String.valueOf(mBgColor));
     }
+
+    fileName.append("-");
 
     //Foreground colour
+    fileName.append("Fg_");
     if (mFgGradient) {
-      fileName.append("FgGradient-" + mFgColor.getGradientColor(true) + "-" + mFgColor.getGradientColor(false));
+      fileName.append(mFgColor.getGradientColor(true) + "_to_" + mFgColor.getGradientColor(false));
     } else {
-      fileName.append("Fg-" + String.valueOf(mFgColor));
+      fileName.append(String.valueOf(mFgColor));
     }
 
-    fileName.append("_");
+    fileName.append("-");
 
     //Size
     fileName.append(String.valueOf(width) + "x" + String.valueOf(height));
