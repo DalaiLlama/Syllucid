@@ -19,7 +19,8 @@
 import java.awt.event.KeyEvent;
 
 /**
-*/
+ * Enum handling all colour related activities.
+ */
 enum Color {
 
   BLACK(#000000),
@@ -38,6 +39,10 @@ enum Color {
   TRANSPARENT(#FFFFFF);
 
   private color mHex;
+
+  private Color(color hex) {
+    mHex = hex;
+  }
 
   color getHex() {
     return mHex;
@@ -142,26 +147,30 @@ enum Color {
     return c;
   }
 
+  /**
+   * Convert enum name to something resembling camel case.
+  */
   @Override
   public String toString(){
     return this.name().substring(0, 1).toUpperCase() + this.name().substring(1).toLowerCase();
   }
-
-  private Color(color hex) {
-    mHex = hex;
-  }
 }
 
 /**
-*/
+ * Class managing the logo composition.
+ */
 class Icon {
 
   private static final float sScale = 5.3; // Number to match line width with width found in branding
   private static final float sSocialMediaScale = 0.85; // Number to match icon size found in branding
 
-  PGraphics mBuffer;
-  PGraphics mFgBuffer;
-  PGraphics mMask;
+  PGraphics mLayerDisplay;
+  PGraphics mLayerBg;
+  PGraphics mLayerFg;
+  PGraphics mHilbertMask;
+
+  PGraphics mLayerFgScaled;
+  PGraphics mHilbertMaskScaled;
 
   HilbertCurve mHilbertCurve;
 
@@ -176,9 +185,13 @@ class Icon {
   boolean mFgGradient;
 
   Icon(boolean hasBorder, Color bgColor, Color fgColor) {
-    mBuffer = createGraphics(width, height);
-    mFgBuffer = createGraphics(width, height);
-    mMask = createGraphics(width, height);
+    mLayerDisplay = initLayer(false);
+    mLayerBg = initLayer(false);
+    mLayerFg = initLayer(false);
+    mHilbertMask = initLayer(false);
+
+    mLayerFgScaled = initLayer(true);
+    mHilbertMaskScaled = initLayer(true);
 
     mHilbertCurve = new HilbertCurve(3);
 
@@ -194,124 +207,24 @@ class Icon {
   }
 
   void draw() {
-    bgBuffer();
+    drawLayerBg();
 
-    fgBuffer();
+    drawLayerFg();
 
-    if (mForSocialMedia) {
-      float dim = (pow(2 * pow(width, 2), 0.5)/2) * sSocialMediaScale;
-      float pos = (width/2)-dim/2;
-      mBuffer.image(mFgBuffer, pos, pos, dim, dim);
-    } else {
-      mBuffer.image(mFgBuffer, 0, 0);
-    }
+    compositeLayers();
 
-    mBuffer.endDraw();
-
-    image(mBuffer, 0, 0);
+    //Render to display
+    image(mLayerDisplay, 0, 0);
 
     if (mSave) {
       String fileName = icon.getFileName();
       print("Saving: " + fileName + "\n");
-      mBuffer.save(fileName);
+      mLayerDisplay.save(fileName);
     }
   }
 
-  void bgBuffer() {
-    mBuffer.beginDraw();
-    mBuffer.clear();
-
-    fillBuffer(mBuffer, mBgColor, mBgGradient);
-  }
-
-  void fgBuffer() {
-    mFgBuffer.beginDraw();
-    mFgBuffer.clear();
-    fillBuffer(mFgBuffer, mFgColor, mFgGradient);
-
-    mMask.beginDraw();
-    mMask.clear();
-    createMask();
-
-    mMask.endDraw();
-
-    mFgBuffer.mask(mMask);
-
-    mFgBuffer.endDraw();
-  }
-
-  void fillBuffer(PGraphics buffer, Color c, boolean hasGradient) {
-
-    if (c == Color.TRANSPARENT) {
-      buffer.noStroke();
-      buffer.fill(0, 0);
-    } else {
-      if(hasGradient) {
-        // Stroke
-        for (int i = 0; i < width; i++) {
-          color colorStart = c.getGradientColor(true).getHex();
-          color colorEnd = c.getGradientColor(false).getHex();
-
-          buffer.stroke(lerpColor(colorStart, colorEnd, map(i, 0, width, 0, 1)));
-          buffer.line(i, 0, i, height);
-        }
-        buffer.noFill();
-      } else {
-        buffer.noStroke();
-        buffer.fill(c.getHex());
-      }
-    }
-
-    buffer.noStroke();
-    buffer.rect(0, 0, width, height);
-  }
-
-  void createMask() {
-    //Calcualte parameters
-    int vertexRowCount = mHilbertCurve.getVertexRowCount();
-
-    int lineWidth = int((width / vertexRowCount) / sScale);
-
-    float lineLenght = width / (vertexRowCount);
-    if (mHasBorder) {
-      lineLenght = width / (vertexRowCount + 1);
-    }
-
-    float offset = lineLenght/2;
-    if (mHasBorder) {
-      offset = lineLenght;
-    }
-
-    //Border
-    mMask.fill(0, 0);
-    if (mHasBorder) {
-      mMask.stroke(255);
-      mMask.strokeWeight(lineWidth * 2);
-    } else {
-      mMask.noStroke();
-    }
-    mMask.rect(0, 0, width, height);
-
-    // Hilbert Curve
-    mMask.noFill();
-
-    mMask.stroke(255);
-    mMask.strokeWeight(lineWidth);
-    mMask.strokeCap(PROJECT);
-
-    mMask.beginShape();
-
-    PVector vOut = new PVector();
-
-    // Translate path for image space
-    for (PVector vIn : mHilbertCurve.getPath()) {
-      vOut = vIn.copy();
-      vOut.mult(lineLenght);
-      vOut.add(offset, offset);
-      mMask.vertex(vOut.x, vOut.y);
-    }
-
-    mMask.endShape();
+  void setOrder(int order){
+    mHilbertCurve.setOrder(order < 1 ? 1 : order);
   }
 
   void switchBgColor(boolean up) {
@@ -320,10 +233,6 @@ class Icon {
 
   void switchFgColor(boolean up) {
     mFgColor = mFgColor.switchColor(up);
-  }
-
-  void setOrder(int order){
-    mHilbertCurve.setOrder(order < 1 ? 1 : order);
   }
 
   void toggleBorder() {
@@ -359,7 +268,137 @@ class Icon {
     print("Social Media: " + mForSocialMedia, "\n");
   }
 
-  String getFileName() {
+  private PGraphics initLayer(boolean scaled) {
+    int w = scaled ? int((pow(2 * pow(width, 2), 0.5)/2) * sSocialMediaScale) : width;
+    int h = scaled ? w : height;
+
+    return createGraphics(w, h);
+  }
+
+  private void drawLayerBg() {
+    mLayerBg.beginDraw();
+    mLayerBg.clear();
+
+    if (mBgColor == Color.TRANSPARENT) {
+      mLayerBg.noStroke();
+      mLayerBg.fill(0, 0);
+      mLayerBg.rect(0, 0, width, height);
+    } else {
+      if(mBgGradient) {
+        // Stroke
+        for (int i = 0; i < width; i++) {
+          color colorStart = mBgColor.getGradientColor(true).getHex();
+          color colorEnd = mBgColor.getGradientColor(false).getHex();
+
+          mLayerBg.stroke(lerpColor(colorStart, colorEnd, map(i, 0, width, 0, 1)));
+          mLayerBg.line(i, 0, i, height);
+        }
+        mLayerBg.noFill();
+      } else {
+        mLayerBg.noStroke();
+        mLayerBg.fill(mBgColor.getHex());
+        mLayerBg.rect(0, 0, width, height);
+      }
+    }
+
+    mLayerBg.endDraw();
+  }
+
+  private void drawLayerFg() {
+    PGraphics layer = mForSocialMedia ? mLayerFgScaled : mLayerFg;
+
+    layer.beginDraw();
+    layer.clear();
+
+    if(mFgGradient) {
+      layer.noFill();
+      for (int i = 0; i < layer.width; i++) {
+        color colorStart = mFgColor.getGradientColor(true).getHex();
+        color colorEnd = mFgColor.getGradientColor(false).getHex();
+
+        layer.stroke(lerpColor(colorStart, colorEnd, map(i, 0, layer.width, 0, 1)));
+        layer.line(i, 0, i, layer.height);
+      }
+    } else {
+      layer.noStroke();
+      layer.fill(mFgColor.getHex());
+      layer.rect(0, 0, layer.width, layer.height);
+    }
+
+    layer.mask(createHilbertMask());
+
+    layer.endDraw();
+  }
+
+  private void compositeLayers() {
+    mLayerDisplay.beginDraw();
+    mLayerDisplay.clear();
+
+    mLayerDisplay.image(mLayerBg, 0, 0);
+
+    if (mForSocialMedia) {
+      int pos = (mLayerDisplay.width/2)-mLayerFgScaled.width/2;
+      mLayerDisplay.image(mLayerFgScaled, pos, pos, mLayerFgScaled.width, mLayerFgScaled.height);
+    } else {
+      mLayerDisplay.image(mLayerFg, 0, 0);
+    }
+
+    mLayerDisplay.endDraw();
+  }
+
+  /**
+   * To correctly display the foreground colour gradient, a mask of the pattern must be used.
+   */
+  private PGraphics createHilbertMask() {
+    PGraphics mask = mForSocialMedia ? mHilbertMaskScaled : mHilbertMask;
+    mask.beginDraw();
+    mask.clear();
+
+    //Calcualte line parameters
+    int vertexRowCount = mHilbertCurve.getVertexRowCount();
+
+    int lineWidth = int((mask.width / vertexRowCount) / sScale);
+    int lineLenght = mask.width / (vertexRowCount + (mHasBorder ? 1 : 0));
+
+    float offset = mHasBorder ? lineLenght : lineLenght/2;
+
+    //Border
+    if (mHasBorder) {
+      mask.stroke(255);
+      mask.strokeWeight(lineWidth * 2);
+    } else {
+      mask.noStroke();
+    }
+    mask.fill(0, 0);
+    mask.rect(0, 0, mask.width, mask.height);
+
+    // Hilbert Curve
+    mask.stroke(255);
+    mask.strokeWeight(lineWidth);
+    mask.strokeCap(PROJECT);
+
+    mask.noFill();
+
+    mask.beginShape();
+
+    PVector vOut = new PVector();
+
+    // Translate path for image space
+    for (PVector vIn : mHilbertCurve.getPath()) {
+      vOut = vIn.copy();
+      vOut.mult(lineLenght);
+      vOut.add(offset, offset);
+      mask.vertex(vOut.x, vOut.y);
+    }
+
+    mask.endShape();
+
+    mask.endDraw();
+
+    return mask;
+  }
+
+  private String getFileName() {
     StringBuilder fileName = new StringBuilder();
 
     //Order
@@ -403,7 +442,8 @@ class Icon {
 }
 
 /**
-*/
+ *
+ */
 class HilbertCurve {
 
   int mOrder;
@@ -480,6 +520,9 @@ class HilbertCurve {
 
 Icon icon;
 
+/**
+ *
+ */
 void setup() {
   size(1024, 1024);
 
@@ -490,13 +533,18 @@ void setup() {
   icon = new Icon(false, Color.OBSIDIAN, Color.GREEN_DARK);
 }
 
-
+/**
+ *
+ */
 void draw() {
   clear();
 
   icon.draw();
 }
 
+/**
+ *
+ */
 void keyPressed() {
   if (key == CODED) {
     switch(keyCode) {
