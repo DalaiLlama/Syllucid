@@ -206,10 +206,11 @@ class Icon {
     mFgGradient = false;
   }
 
-  void draw() {
+  void draw(boolean animate) {
+
     drawLayerBg();
 
-    drawLayerFg();
+    drawLayerFg(animate);
 
     compositeLayers();
 
@@ -304,7 +305,7 @@ class Icon {
     mLayerBg.endDraw();
   }
 
-  private void drawLayerFg() {
+  private void drawLayerFg(boolean animate) {
     PGraphics layer = mForSocialMedia ? mLayerFgScaled : mLayerFg;
 
     layer.beginDraw();
@@ -325,7 +326,7 @@ class Icon {
       layer.rect(0, 0, layer.width, layer.height);
     }
 
-    layer.mask(createHilbertMask());
+    layer.mask(createHilbertMask(animate));
 
     layer.endDraw();
   }
@@ -349,7 +350,7 @@ class Icon {
   /**
    * To correctly display the foreground colour gradient, a mask of the pattern must be used.
    */
-  private PGraphics createHilbertMask() {
+  private PGraphics createHilbertMask(boolean animate) {
     PGraphics mask = mForSocialMedia ? mHilbertMaskScaled : mHilbertMask;
     mask.beginDraw();
     mask.clear();
@@ -384,11 +385,15 @@ class Icon {
     PVector vOut = new PVector();
 
     // Translate path for image space
+    int count = 0;
     for (PVector vIn : mHilbertCurve.getPath()) {
       vOut = vIn.copy();
       vOut.mult(lineLenght);
       vOut.add(offset, offset);
       mask.vertex(vOut.x, vOut.y);
+      if (animate && frameCount <= count++) {
+        break;      
+      }
     }
 
     mask.endShape();
@@ -433,6 +438,11 @@ class Icon {
 
     //Size
     fileName.append(String.valueOf(width) + "x" + String.valueOf(height));
+    
+    //Frame
+    if (mAnimate) {
+      fileName.append("-" + String.format("%03d", frameCount));
+    }
 
     //File type
     fileName.append(".png");
@@ -447,6 +457,7 @@ class Icon {
 class HilbertCurve {
 
   int mOrder;
+  int mVertexCount;
   int mVertexRowCount;
   PVector[] mPath;
 
@@ -463,18 +474,22 @@ class HilbertCurve {
 
     mVertexRowCount = int(pow(2, order));
 
-    int vertexCount = int(pow(mVertexRowCount, 2));
+    mVertexCount = int(pow(mVertexRowCount, 2));
 
-    mPath = new PVector[vertexCount];
+    mPath = new PVector[mVertexCount];
 
     // Calculate position of each vertex
-    for (int i = 0; i < vertexCount; i++) {
+    for (int i = 0; i < mVertexCount; i++) {
       mPath[i] = calculateVector(i);
     }
   }
 
   PVector[] getPath() {
     return mPath;
+  }
+
+  int getVertexCount() {
+    return mVertexCount;
   }
 
   int getVertexRowCount() {
@@ -519,6 +534,7 @@ class HilbertCurve {
 }
 
 Icon icon;
+boolean mAnimate = false;
 
 /**
  *
@@ -527,10 +543,14 @@ void setup() {
   size(1024, 1024);
 
   noFill();
+  
+  if (mAnimate) {
+    frameRate(10);  
+  } else {
+    noLoop();
+  }
 
-  noLoop();
-
-  icon = new Icon(false, Color.OBSIDIAN, Color.GREEN_DARK);
+  icon = new Icon(true, Color.OBSIDIAN, Color.GREEN_DARK);
 }
 
 /**
@@ -538,8 +558,7 @@ void setup() {
  */
 void draw() {
   clear();
-
-  icon.draw();
+  icon.draw(mAnimate);
 }
 
 /**
