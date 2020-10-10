@@ -391,8 +391,8 @@ class Icon {
       vOut.mult(lineLenght);
       vOut.add(offset, offset);
       mask.vertex(vOut.x, vOut.y);
-      if (animate && frameCount <= count++) {
-        break;      
+      if (animate && count++ >= frameCount % mHilbertCurve.getVertexCount()) {
+        break;
       }
     }
 
@@ -438,7 +438,7 @@ class Icon {
 
     //Size
     fileName.append(String.valueOf(width) + "x" + String.valueOf(height));
-    
+
     //Frame
     if (mAnimate) {
       fileName.append("-" + String.format("%03d", frameCount));
@@ -543,12 +543,12 @@ void setup() {
   size(1024, 1024);
 
   noFill();
-  
-  if (mAnimate) {
-    frameRate(10);  
-  } else {
+
+  //if (mAnimate) {
+  //  frameRate(10);
+  //} else {
     noLoop();
-  }
+  //}
 
   icon = new Icon(true, Color.OBSIDIAN, Color.GREEN_DARK);
 }
@@ -599,6 +599,14 @@ void keyPressed() {
     icon.toggleSocialMedia();
   } else if (keyCode == KeyEvent.VK_S) {
     icon.toggleSave();
+  } else if (keyCode == KeyEvent.VK_A) {
+    mAnimate = !mAnimate;
+    if (mAnimate) {
+      frameRate(60);
+      loop();
+    } else {
+      noLoop();
+    }
   } else if (keyCode == KeyEvent.VK_T) {
     icon.toggleTransparency();
   }
